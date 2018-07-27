@@ -2,9 +2,9 @@
 
 module.exports = pixelmatch;
 
-function pixelmatch(img1, img2, output, width, height, options) {
+function pixelmatch(img1, img2, img3, output, width, height, options) {
 
-    if (img1.length !== img2.length) throw new Error('Image sizes do not match.');
+    if (img1.length !== img2.length || img2.length !== img3.length) throw new Error('Image sizes do not match.');
 
     if (!options) options = {};
 
@@ -22,26 +22,15 @@ function pixelmatch(img1, img2, output, width, height, options) {
             var pos = (y * width + x) * 4;
 
             // squared YUV distance between colors at this pixel position
-            var delta = colorDelta(img1, img2, pos, pos);
+            var delta1 = colorDelta(img1, img2, pos, pos);
+            var delta2 = colorDelta(img2, img3, pos, pos);
+            var delta3 = colorDelta(img1, img3, pos, pos);
 
             // the color difference is above the threshold
-            if (delta > maxDelta) {
-                // check it's a real rendering difference or just anti-aliasing
-                if (!options.includeAA && (antialiased(img1, x, y, width, height, img2) ||
-                                   antialiased(img2, x, y, width, height, img1))) {
-                    // one of the pixels is anti-aliasing; draw as yellow and do not count as difference
-                    if (output) drawPixel(output, pos, 255, 255, 0);
-
-                } else {
-                    // found substantial difference not caused by anti-aliasing; draw it as red
-                    if (output) drawPixel(output, pos, 255, 0, 0);
-                    diff++;
-                }
-
-            } else if (output) {
-                // pixels are similar; draw background as grayscale image blended with white
-                var val = blend(grayPixel(img1, pos), 0.1);
-                drawPixel(output, pos, val, val, val);
+            if (delta1 > maxDelta || delta2 > maxDelta || delta3 > maxDelta) {
+                // found substantial difference not caused by anti-aliasing; draw it as red
+                if (output) drawPixel(output, pos, 255, 255, 255);
+                diff++;
             }
         }
     }
@@ -125,8 +114,12 @@ function colorDelta(img1, img2, k, m, yOnly) {
         g2 = blend(img2[m + 1], a2),
         b2 = blend(img2[m + 2], a2),
 
-        y = rgb2y(r1, g1, b1) - rgb2y(r2, g2, b2);
+        y1 = rgb2y(r1, g1, b1),
+        y2 = rgb2y(r2, g2, b2),
 
+        y = y1 - y2;
+
+    //if (y1 < 180 || y2 < 180) return 0;
     if (yOnly) return y; // brightness difference only
 
     var i = rgb2i(r1, g1, b1) - rgb2i(r2, g2, b2),
