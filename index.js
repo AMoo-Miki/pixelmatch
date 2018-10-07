@@ -2,9 +2,9 @@
 
 module.exports = pixelmatch;
 
-function pixelmatch(img1, img2, img3, output, width, height, options) {
+function pixelmatch(img1, img2, output, width, height, options) {
 
-    if (img1.length !== img2.length || img2.length !== img3.length) throw new Error('Image sizes do not match.');
+    if (img1.length !== img2.length) throw new Error('Image sizes do not match.');
 
     if (!options) options = {};
 
@@ -22,12 +22,10 @@ function pixelmatch(img1, img2, img3, output, width, height, options) {
             var pos = (y * width + x) * 4;
 
             // squared YUV distance between colors at this pixel position
-            var delta1 = colorDelta(img1, img2, pos, pos);
-            var delta2 = colorDelta(img2, img3, pos, pos);
-            var delta3 = colorDelta(img1, img3, pos, pos);
+            var delta = colorDelta(img1, img2, pos, pos);
 
             // the color difference is above the threshold
-            if (delta1 > maxDelta || delta2 > maxDelta || delta3 > maxDelta) {
+            if (delta > maxDelta) {
                 // found substantial difference not caused by anti-aliasing; draw it as red
                 if (output) drawPixel(output, pos, 255, 255, 255);
                 diff++;
